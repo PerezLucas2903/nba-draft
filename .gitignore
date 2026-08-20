@@ -1,0 +1,7 @@
+.archive/
+__pycache__/
+.ipynb_checkpoints/
+
+# Models are reproducible outputs, not source files.
+models/*
+!models/.gitkeep

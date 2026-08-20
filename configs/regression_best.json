@@ -1,0 +1,56 @@
+{
+  "data_path": "nba_draft_data_collection/data/processed/two_stage_college_comparison.parquet",
+  "target": "nba_min_3y",
+  "numerical_features": [
+    "college_age_on_july_1",
+    "college_last_minutes",
+    "college_last_points_per_40",
+    "college_last_rebounds_per_40",
+    "college_last_assists_per_40",
+    "college_last_stocks_per_40_advanced",
+    "college_last_ts_pct",
+    "college_last_three_pct_shrunk",
+    "college_career_seasons",
+    "college_career_minutes",
+    "college_career_points_per_40",
+    "college_career_assists_per_40",
+    "college_career_ts_pct",
+    "college_career_three_pct_shrunk",
+    "college_development_points_per_40_delta"
+  ],
+  "categorical_features": [
+    "college_position"
+  ],
+  "log_transform_target": false,
+  "refit_on_train_validation": true,
+  "split": {
+    "column": "draft_year",
+    "train_end": 2017,
+    "validation_start": 2018,
+    "validation_end": 2019,
+    "test_start": 2020,
+    "test_end": 2022
+  },
+  "model": {
+    "name": "ridge",
+    "hyperparameters": {
+      "alpha": 100.0
+    }
+  },
+  "tuning": {
+    "n_iter": null,
+    "random_state": 42,
+    "search_space": {
+      "alpha": [
+        0.1,
+        1.0,
+        10.0,
+        100.0
+      ]
+    },
+    "output_model_path": "models/regression_tuned.joblib",
+    "results_path": "models/regression_tuning_results.json",
+    "best_config_path": "configs/regression_best.json"
+  },
+  "output_model_path": "models/regression_tuned.joblib"
+}

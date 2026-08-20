@@ -1,0 +1,867 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How the Two Winning Models Work</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #56647a;
+      --line: #d9e0ea;
+      --paper: #ffffff;
+      --wash: #f4f7fb;
+      --navy: #17365d;
+      --blue: #2f6da4;
+      --teal: #167a78;
+      --gold: #b9770e;
+      --red: #a33a3a;
+      --green-wash: #edf8f6;
+      --blue-wash: #edf4fb;
+      --gold-wash: #fff8e8;
+      --red-wash: #fff1f0;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      background: #e9edf3;
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.48;
+    }
+
+    body {
+      width: 210mm;
+      margin: 10mm auto;
+      background: var(--paper);
+      box-shadow: 0 3mm 12mm rgba(26, 42, 66, 0.16);
+    }
+
+    main { padding: 15mm 16mm 17mm; }
+
+    @page {
+      size: A4;
+      margin: 14mm 15mm 16mm;
+    }
+
+    @media print {
+      html, body { background: white; }
+      body {
+        width: auto;
+        margin: 0;
+        box-shadow: none;
+      }
+      main { padding: 0; }
+      a { color: inherit; text-decoration: none; }
+      .page-break { break-before: page; }
+      .avoid-break, table, .callout, .model-card, .formula-card {
+        break-inside: avoid;
+      }
+    }
+
+    h1, h2, h3, h4 { color: var(--navy); line-height: 1.16; }
+    h1 { font-size: 28pt; margin: 0 0 5mm; letter-spacing: -0.5pt; }
+    h2 {
+      font-size: 19pt;
+      margin: 0 0 5mm;
+      padding-bottom: 2mm;
+      border-bottom: 1.4pt solid var(--line);
+    }
+    h3 { font-size: 13pt; margin: 6mm 0 2.5mm; }
+    h4 { font-size: 10.5pt; margin: 0 0 1.5mm; }
+    p { margin: 0 0 3.2mm; }
+    ul, ol { margin: 2mm 0 4mm 5.5mm; padding-left: 4mm; }
+    li { margin: 0 0 1.2mm; }
+    strong { color: #102b4b; }
+    small, .small { font-size: 8.4pt; color: var(--muted); }
+
+    a { color: #1f5f98; text-decoration-thickness: 0.7pt; }
+    code, pre {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 8.5pt;
+    }
+    code {
+      background: #eef2f7;
+      border-radius: 2px;
+      padding: 0.2mm 0.8mm;
+      overflow-wrap: anywhere;
+    }
+    pre {
+      margin: 2.5mm 0 4mm;
+      padding: 3.4mm;
+      color: #eef5ff;
+      background: #172a43;
+      border-left: 3pt solid #4f9bd8;
+      border-radius: 2mm;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 1.42;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 3mm 0 5mm;
+      font-size: 8.7pt;
+    }
+    th, td {
+      border: 0.6pt solid var(--line);
+      padding: 2.1mm 2.3mm;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: white;
+      background: var(--navy);
+      font-weight: 650;
+    }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .tight th, .tight td { padding: 1.5mm 1.8mm; }
+
+    .cover {
+      min-height: 252mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 10mm 7mm 5mm;
+      background:
+        linear-gradient(135deg, rgba(23, 54, 93, 0.06), rgba(22, 122, 120, 0.02)),
+        white;
+    }
+    .cover-band {
+      width: 31mm;
+      height: 2.2mm;
+      margin-bottom: 12mm;
+      border-radius: 2mm;
+      background: linear-gradient(90deg, var(--blue), var(--teal));
+    }
+    .eyebrow {
+      margin-bottom: 3mm;
+      color: var(--teal);
+      font-size: 9pt;
+      font-weight: 750;
+      letter-spacing: 1.6pt;
+      text-transform: uppercase;
+    }
+    .subtitle {
+      max-width: 145mm;
+      color: #40536e;
+      font-family: Georgia, serif;
+      font-size: 15pt;
+      line-height: 1.45;
+    }
+    .cover-note {
+      max-width: 145mm;
+      padding: 4mm;
+      color: #30445f;
+      background: rgba(237, 244, 251, 0.9);
+      border-left: 3pt solid var(--blue);
+    }
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10mm;
+      padding-top: 5mm;
+      border-top: 0.8pt solid var(--line);
+      color: var(--muted);
+      font-size: 8.5pt;
+    }
+
+    .section { margin-bottom: 7mm; }
+    .lede {
+      max-width: 165mm;
+      color: #34475f;
+      font-family: Georgia, serif;
+      font-size: 12.2pt;
+      line-height: 1.5;
+    }
+    .kicker {
+      margin-bottom: 1.7mm;
+      color: var(--teal);
+      font-size: 8.2pt;
+      font-weight: 750;
+      letter-spacing: 1.2pt;
+      text-transform: uppercase;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4mm;
+      margin: 3mm 0 5mm;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3mm;
+      margin: 3mm 0 5mm;
+    }
+    .model-card, .formula-card, .stat-card {
+      padding: 4mm;
+      border: 0.7pt solid var(--line);
+      border-radius: 2.5mm;
+      background: white;
+    }
+    .model-card.classifier { border-top: 3pt solid var(--blue); }
+    .model-card.regression { border-top: 3pt solid var(--teal); }
+    .model-card p:last-child, .formula-card p:last-child { margin-bottom: 0; }
+    .stat-card .number {
+      color: var(--navy);
+      font-size: 19pt;
+      font-weight: 750;
+      line-height: 1;
+    }
+    .stat-card .label { margin-top: 1.5mm; color: var(--muted); font-size: 8.3pt; }
+
+    .callout {
+      margin: 3.5mm 0 5mm;
+      padding: 3.5mm 4mm;
+      border-left: 3pt solid var(--blue);
+      background: var(--blue-wash);
+    }
+    .callout.tip { border-left-color: var(--teal); background: var(--green-wash); }
+    .callout.warning { border-left-color: var(--gold); background: var(--gold-wash); }
+    .callout.danger { border-left-color: var(--red); background: var(--red-wash); }
+    .callout p:last-child { margin-bottom: 0; }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2.5mm;
+      margin: 4mm 0 5mm;
+    }
+    .flow > div {
+      position: relative;
+      min-height: 28mm;
+      padding: 3mm;
+      border: 0.7pt solid var(--line);
+      border-radius: 2mm;
+      background: var(--wash);
+    }
+    .flow > div:not(:last-child)::after {
+      content: "›";
+      position: absolute;
+      top: 8mm;
+      right: -2.3mm;
+      z-index: 2;
+      color: var(--blue);
+      font-size: 18pt;
+      font-weight: 800;
+    }
+    .flow b { display: block; margin-bottom: 1mm; color: var(--navy); }
+    .flow span { display: block; color: var(--muted); font-size: 7.8pt; line-height: 1.35; }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: 3fr 1.2fr 1.5fr;
+      overflow: hidden;
+      margin: 4mm 0 2mm;
+      border: 0.7pt solid var(--line);
+      border-radius: 2mm;
+    }
+    .timeline div { padding: 3mm; color: white; text-align: center; }
+    .timeline .train { background: var(--navy); }
+    .timeline .validation { background: var(--blue); }
+    .timeline .test { background: var(--teal); }
+    .timeline small { display: block; color: rgba(255,255,255,0.85); }
+
+    .lane {
+      display: grid;
+      grid-template-columns: 27mm 1fr;
+      gap: 3mm;
+      align-items: stretch;
+      margin: 2.5mm 0;
+    }
+    .lane-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2mm;
+      border-radius: 2mm;
+      color: white;
+      background: var(--navy);
+      font-weight: 700;
+      text-align: center;
+    }
+    .lane-steps {
+      padding: 3mm;
+      border: 0.7pt solid var(--line);
+      border-radius: 2mm;
+      background: #fafbfd;
+    }
+    .arrow { color: var(--blue); font-weight: 800; }
+
+    .formula-card .equation {
+      display: block;
+      margin: 1.3mm 0;
+      color: #175a85;
+      font-family: Cambria, Georgia, serif;
+      font-size: 10pt;
+    }
+    .tag {
+      display: inline-block;
+      margin: 0 1mm 1mm 0;
+      padding: 0.5mm 1.4mm;
+      border-radius: 2mm;
+      color: #31506f;
+      background: #e8eff7;
+      font-size: 7.5pt;
+      font-weight: 650;
+    }
+    .tag.teal { color: #155f5d; background: #e4f3f1; }
+
+    .toc {
+      columns: 2;
+      column-gap: 10mm;
+      margin: 4mm 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: toc;
+    }
+    .toc li {
+      break-inside: avoid;
+      margin: 0 0 2.4mm;
+      counter-increment: toc;
+    }
+    .toc li::before {
+      content: counter(toc, decimal-leading-zero) " ";
+      color: var(--teal);
+      font-weight: 750;
+    }
+    .toc a { color: var(--ink); text-decoration: none; }
+
+    .checklist { list-style: none; margin-left: 0; padding-left: 0; }
+    .checklist li { position: relative; padding-left: 6mm; }
+    .checklist li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--teal);
+      font-weight: 800;
+    }
+
+    .path { font-family: Consolas, monospace; font-size: 8.2pt; }
+    .muted { color: var(--muted); }
+    .center { text-align: center; }
+    .nowrap { white-space: nowrap; }
+    .footer-note {
+      margin-top: 8mm;
+      padding-top: 3mm;
+      border-top: 0.7pt solid var(--line);
+      color: var(--muted);
+      font-size: 8pt;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <section class="cover">
+    <div>
+      <div class="cover-band"></div>
+      <div class="eyebrow">NBA draft modeling · code companion</div>
+      <h1>How the Two Winning Models Work</h1>
+      <p class="subtitle">A beginner-friendly guide to the training code, JSON configurations, feature engineering, validation choices, and saved model artifacts.</p>
+      <div class="cover-note">
+        This guide explains how to read and safely modify the repository. For the complete preprocessing and validation record, use the companion <a href="model_preprocessing_report.pdf">Preprocessing and Validation Protocol</a>.
+      </div>
+    </div>
+    <div>
+      <div class="grid-2">
+        <div class="model-card classifier">
+          <h4>Draft-entry classifier</h4>
+          <p>Ranks Combine participants by whether they will be drafted in the same year.</p>
+          <p><strong>Holdout AP:</strong> 0.8245</p>
+        </div>
+        <div class="model-card regression">
+          <h4>Early-minutes regression</h4>
+          <p>Predicts first-three-season NBA minutes after a player has been drafted.</p>
+          <p><strong>Holdout R²:</strong> 0.4819</p>
+        </div>
+      </div>
+      <div class="meta">
+        <span>Repository guide</span>
+        <span>Frozen experiments: 2009–2022 data</span>
+        <span>Updated August 2026</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section page-break" id="contents">
+    <div class="kicker">Start here</div>
+    <h2>What this guide answers</h2>
+    <p class="lede">The project has two different prediction problems. The cleanest way to understand the code is to follow one row from a materialized parquet file, through a JSON configuration and preprocessing pipeline, into a fitted model and a holdout prediction.</p>
+    <ol class="toc">
+      <li><a href="#two-questions">The two questions and results</a></li>
+      <li><a href="#architecture">The repository’s simple architecture</a></li>
+      <li><a href="#regression-flow">Regression, step by step</a></li>
+      <li><a href="#classification-flow">Classification, step by step</a></li>
+      <li><a href="#features">Feature engineering in basketball terms</a></li>
+      <li><a href="#configs">How JSON fields control the code</a></li>
+      <li><a href="#tuning">Frozen winners versus new searches</a></li>
+      <li><a href="#modify">How to modify the project safely</a></li>
+      <li><a href="#debug">Common problems and fixes</a></li>
+      <li><a href="#sources">Source map and limitations</a></li>
+    </ol>
+    <div class="callout tip">
+      <strong>Best way to learn the implementation:</strong> read this guide once, then run the two small teaching notebooks. They call the same reusable functions as the command-line scripts: <a href="../notebooks/evaluate_best_classification_model.ipynb">classification notebook</a> and <a href="../notebooks/evaluate_best_regression_model.ipynb">regression notebook</a>.
+    </div>
+  </section>
+
+  <section class="section page-break" id="two-questions">
+    <div class="kicker">01 · Problem definition</div>
+    <h2>Two related questions, two different populations</h2>
+    <table>
+      <thead>
+        <tr><th></th><th>Draft-entry classifier</th><th>Early-minutes regression</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Question</strong></td><td>Will this Combine participant be drafted in the same year?</td><td>After being drafted, how many regular-season minutes will this player receive in his first three NBA seasons?</td></tr>
+        <tr><td><strong>Population</strong></td><td>Players present in all four collected Combine source rosters, 2009–2022.</td><td>Drafted players in the constructed draft table, 2009–2022.</td></tr>
+        <tr><td><strong>Target</strong></td><td><code>drafted</code>, a 0/1 label from exact player ID plus draft-year membership in official Draft History.</td><td><code>nba_min_3y</code>, summed minutes from seasons beginning in the draft year through draft year + 2.</td></tr>
+        <tr><td><strong>Inputs</strong></td><td>105 numeric + 2 categorical: Combine, NCAA history, age, development, and composites.</td><td>48 numeric: draft position, age, NCAA production, development, and composites.</td></tr>
+        <tr><td><strong>Frozen config</strong></td><td><code>configs/xgboost_draft_classifier_advanced_best.json</code></td><td><code>configs/xgboost_minutes_advanced_best.json</code></td></tr>
+      </tbody>
+    </table>
+
+    <div class="grid-3">
+      <div class="stat-card"><div class="number">858</div><div class="label">classification rows</div></div>
+      <div class="stat-card"><div class="number">838</div><div class="label">regression rows</div></div>
+      <div class="stat-card"><div class="number">2020–22</div><div class="label">shared final holdout years</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="model-card classifier">
+        <h3>Classifier result</h3>
+        <p><strong>Average precision:</strong> 0.824542<br>
+        <strong>ROC-AUC:</strong> 0.750620<br>
+        <strong>Test rows:</strong> 202</p>
+        <p class="small">AP and ROC-AUC are the strongest holdout claims because they evaluate ranking and were frozen before test scoring.</p>
+      </div>
+      <div class="model-card regression">
+        <h3>Regression result</h3>
+        <p><strong>R²:</strong> 0.481949<br>
+        <strong>RMSE:</strong> 1,568.183 minutes<br>
+        <strong>Test rows:</strong> 178</p>
+        <p class="small">R² says the model explains about 48% of the variation in this later drafted-player cohort.</p>
+      </div>
+    </div>
+
+    <div class="callout warning">
+      <strong>Why draft pick appears in only one model.</strong> Draft pick would reveal the answer to “was he drafted?”, so the classifier forbids it. The minutes model begins after the draft and asks about later playing time, so pick number is legitimate information about team investment and expected opportunity.
+    </div>
+  </section>
+
+  <section class="section page-break" id="architecture">
+    <div class="kicker">02 · Architecture</div>
+    <h2>The code is a small sequence of ordinary steps</h2>
+    <div class="flow">
+      <div><b>1. Build rows</b><span>Join draft, Combine, NCAA, and NBA tables at the intended player-year grain.</span></div>
+      <div><b>2. Materialize features</b><span>Compute rates, deltas, nonlinear terms, and composites once in parquet.</span></div>
+      <div><b>3. Read JSON</b><span>Choose the target, inputs, years, preprocessing behavior, and XGBoost parameters.</span></div>
+      <div><b>4. Fit in time</b><span>Fit preprocessing and the model only on chronologically eligible rows.</span></div>
+      <div><b>5. Save evidence</b><span>Write the fitted artifact, metrics, predictions, and search results.</span></div>
+    </div>
+
+    <div class="timeline">
+      <div class="train"><strong>Training</strong><small>2009–2017</small></div>
+      <div class="validation"><strong>Validation</strong><small>2018–2019</small></div>
+      <div class="test"><strong>Holdout</strong><small>2020–2022</small></div>
+    </div>
+    <p class="small center">For the final frozen run, the estimator is refitted through 2019. Only 2020–2022 remains out of sample.</p>
+
+    <h3>Where responsibilities live</h3>
+    <div class="lane">
+      <div class="lane-label">Classification</div>
+      <div class="lane-steps"><code>train_classifier.py</code> handles command-line orchestration and files <span class="arrow">→</span> <code>classifier_workflow.py</code> contains validation, preprocessing, calibration, annual ranking, evaluation, and artifact helpers <span class="arrow">→</span> <code>tune_classifier.py</code> owns the search loop.</div>
+    </div>
+    <div class="lane">
+      <div class="lane-label">Regression</div>
+      <div class="lane-steps"><code>train_model.py</code> contains the compact regression workflow <span class="arrow">→</span> <code>tune_model.py</code> reuses its functions across expanding validation folds <span class="arrow">→</span> <code>tuning.py</code> builds reproducible candidates for both tasks.</div>
+    </div>
+
+    <div class="callout">
+      <strong>Why this organization is useful.</strong> The command-line scripts read like recipes. Reusable pieces are plain functions, so notebooks and tests can call the exact same logic without duplicating a hidden second implementation.
+    </div>
+  </section>
+
+  <section class="section page-break" id="regression-flow">
+    <div class="kicker">03 · Regression walkthrough</div>
+    <h2>From a drafted player to a minutes prediction</h2>
+    <ol>
+      <li><strong>Load the frozen JSON.</strong> It names the advanced parquet, target, 48 features, chronological split, XGBoost parameters, and output file.</li>
+      <li><strong>Validate and clean.</strong> Rows missing the target or split year are dropped. Configured numerical columns are coerced to numbers; infinities become <code>NaN</code>.</li>
+      <li><strong>Split by draft year.</strong> The test period is later in time, not a random sample of older players.</li>
+      <li><strong>Fit preprocessing.</strong> Each numeric column receives a training-fold median, then standardization. The winner has no categorical inputs.</li>
+      <li><strong>Fit XGBoost.</strong> The target remains raw minutes because <code>log_transform_target</code> is <code>false</code>.</li>
+      <li><strong>Refit and evaluate.</strong> The final model fits train + validation, predicts all three named periods, and saves a normal sklearn pipeline with joblib.</li>
+    </ol>
+
+    <pre>config = load_config("configs/xgboost_minutes_advanced_best.json")
+data = prepare_data(load_data(config["data_path"]), config)
+splits = split_data(data, config["split"])
+
+model = make_pipeline(config)
+fit_rows = concat(splits["train"], splits["validation"])
+model.fit(fit_rows[features], fit_rows["nba_min_3y"])
+test_minutes = model.predict(splits["test"][features])</pre>
+
+    <h3>Frozen XGBoost settings</h3>
+    <table class="tight">
+      <thead><tr><th>Setting</th><th>Value</th><th>Plain-language role</th></tr></thead>
+      <tbody>
+        <tr><td><code>n_estimators</code> / <code>learning_rate</code></td><td>500 / 0.02</td><td>Many small corrections rather than a few aggressive trees.</td></tr>
+        <tr><td><code>max_depth</code></td><td>1</td><td>Decision stumps keep individual relationships deliberately simple.</td></tr>
+        <tr><td><code>min_child_weight</code></td><td>10</td><td>Discourages splits supported by very little effective sample weight.</td></tr>
+        <tr><td><code>subsample</code> / <code>colsample_bytree</code></td><td>1.0 / 0.8</td><td>Use all rows but only 80% of columns for each tree.</td></tr>
+        <tr><td><code>reg_alpha</code> / <code>reg_lambda</code></td><td>100 / 25</td><td>Strong L1 and L2 regularization limits unstable leaf values.</td></tr>
+        <tr><td><code>gamma</code></td><td>200,000</td><td>Requires a large squared-error improvement before adding a split. Its scale looks large because the target is raw minutes.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout tip">
+      <strong>One subtlety:</strong> trees do not require standardized inputs, but this project’s generic regression pipeline scales them consistently. The scaler and median values are learned only from rows used in each fit, so they do not inspect the holdout.
+    </div>
+  </section>
+
+  <section class="section page-break" id="classification-flow">
+    <div class="kicker">04 · Classification walkthrough</div>
+    <h2>From a Combine row to a calibrated annual rank</h2>
+    <ol>
+      <li><strong>Validate the modeling grain.</strong> The workflow requires one row per <code>(nba_player_id, draft_year)</code>, a binary target, and every configured input.</li>
+      <li><strong>Reject leakage.</strong> IDs, names, draft results, absolute calendar columns, linkage metadata, and post-draft <code>nba_*</code> fields cannot be configured as predictors.</li>
+      <li><strong>Prepare inputs.</strong> Numeric values and <code>NaN</code> pass directly to XGBoost. Missing positions become the literal category <code>missing</code>, then positions are one-hot encoded.</li>
+      <li><strong>Fit a calibration model.</strong> A train-only XGBoost model scores 2018–2019; logistic regression maps its log-odds to calibrated probabilities.</li>
+      <li><strong>Refit the estimator.</strong> XGBoost is fitted through 2019 after removing earlier rows for players who reappear in the 2020–2022 holdout.</li>
+      <li><strong>Rank within each year.</strong> The frozen operating rule labels the top 63.0137% of the complete participant batch in each year.</li>
+      <li><strong>Save a bundle.</strong> The joblib artifact contains the estimator, calibrator, decision rule, and feature schema together.</li>
+    </ol>
+
+    <pre>config = load_config("configs/xgboost_draft_classifier_advanced_best.json")
+data = prepare_data(load_data(resolve(config["data_path"])), config)
+splits = chronological_splits(data, config["split"])
+
+model, calibrator, rule, fit_info = fit_configured_classifier(config, splits)
+metrics = evaluate(model, splits["test"], features, "drafted",
+                   calibrator=calibrator, decision_rule=rule,
+                   year_column="draft_year")</pre>
+
+    <h3>Frozen XGBoost settings</h3>
+    <table class="tight">
+      <thead><tr><th>Setting</th><th>Value</th><th>Plain-language role</th></tr></thead>
+      <tbody>
+        <tr><td><code>n_estimators</code> / <code>learning_rate</code></td><td>400 / 0.035</td><td>Build a conservative score in many small steps.</td></tr>
+        <tr><td><code>max_depth</code> / <code>min_child_weight</code></td><td>1 / 3</td><td>Use shallow effects and avoid tiny leaves.</td></tr>
+        <tr><td><code>subsample</code> / <code>colsample_bytree</code></td><td>0.65 / 0.8</td><td>Sample rows and columns to reduce variance.</td></tr>
+        <tr><td><code>reg_alpha</code> / <code>reg_lambda</code></td><td>0 / 3</td><td>No L1 penalty; moderate L2 shrinkage.</td></tr>
+        <tr><td><code>gamma</code> / <code>max_delta_step</code></td><td>0.5 / 1</td><td>Demand useful splits and limit abrupt logistic updates.</td></tr>
+        <tr><td><code>scale_pos_weight</code></td><td>0.3</td><td>Downweights the positive class; chosen on pre-test validation folds.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout warning">
+      <strong>The annual class label is a batch decision.</strong> It only makes sense when scoring the complete Combine-participant set for a year. For one isolated player, use the calibrated probability or ranking score—not the annual top-fraction label.
+    </div>
+  </section>
+
+  <section class="section page-break" id="features">
+    <div class="kicker">05 · Feature engineering</div>
+    <h2>Turn raw box scores into comparable basketball signals</h2>
+    <p class="lede">The main idea is simple: totals reflect opportunity as much as ability. Per-minute rates, efficiency measures, career summaries, and development features make different prospects more comparable while preserving what was actually observed.</p>
+
+    <div class="grid-2">
+      <div class="formula-card">
+        <h4>Per-40 production</h4>
+        <span class="equation">40 × statistic ÷ minutes</span>
+        <p>Normalizes points, rebounds, assists, steals, blocks, turnovers, and attempts to a common playing-time scale.</p>
+        <span class="tag">both models</span>
+      </div>
+      <div class="formula-card">
+        <h4>Shooting efficiency</h4>
+        <span class="equation">eFG% = (FGM + 0.5 × 3PM) ÷ FGA</span>
+        <span class="equation">TS% = PTS ÷ [2 × (FGA + 0.44 × FTA)]</span>
+        <p>Credits the extra value of threes and accounts for free throws.</p>
+        <span class="tag">both models</span>
+      </div>
+      <div class="formula-card">
+        <h4>Playmaking and shot profile</h4>
+        <span class="equation">AST/TOV · 3PA/FGA · FTA/FGA</span>
+        <p>Describes ball security, perimeter orientation, and ability to reach the line.</p>
+        <span class="tag">both models</span>
+      </div>
+      <div class="formula-card">
+        <h4>Reliable career summaries</h4>
+        <span class="equation">sum career totals first, then recompute rates</span>
+        <p>This weights seasons by their real minutes or attempts instead of averaging small and large samples equally.</p>
+        <span class="tag">both models</span>
+      </div>
+    </div>
+
+    <h3>Basketball composites</h3>
+    <table class="tight">
+      <thead><tr><th>Feature</th><th>Formula</th><th>Why it exists</th></tr></thead>
+      <tbody>
+        <tr><td>Stocks</td><td>steals per 40 + blocks per 40</td><td>A compact defensive-event measure.</td></tr>
+        <tr><td>Playmaking margin</td><td>assists per 40 − turnovers per 40</td><td>Balances creation against lost possessions.</td></tr>
+        <tr><td>Production index</td><td>PTS + REB + AST + 2(STL + BLK) − TOV, all per 40</td><td>Provides a broad, intentionally transparent production summary.</td></tr>
+        <tr><td>Usage proxy</td><td>FGA + 0.44 × FTA + TOV, all per 40</td><td>Approximates possessions a player finishes or turns over.</td></tr>
+        <tr><td>Shrunk 3P%</td><td>(3PM + 0.35 × 40) ÷ (3PA + 40)</td><td>Pulls tiny shooting samples toward a fixed 35% prior.</td></tr>
+        <tr><td>Shrunk FT%</td><td>(FTM + 0.72 × 30) ÷ (FTA + 30)</td><td>Pulls tiny free-throw samples toward a fixed 72% prior.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>Safe division rule.</strong> A zero denominator, infinity, or undefined rate becomes missing—not zero. “No usable attempt sample” is different from “made 0%,” and the model should keep that distinction.
+    </div>
+  </section>
+
+  <section class="section page-break">
+    <div class="kicker">05 · Feature engineering continued</div>
+    <h2>Age, development, Combine traits, and draft capital</h2>
+
+    <div class="grid-2">
+      <div class="formula-card">
+        <h4>Age and upside</h4>
+        <span class="equation">centered age = age − 21</span>
+        <span class="equation">youth score = 23 − age</span>
+        <span class="equation">age-adjusted output = youth × production</span>
+        <p>Exposes nonlinear age effects and the interaction between current output and development runway.</p>
+      </div>
+      <div class="formula-card">
+        <h4>Combine-derived traits</h4>
+        <span class="equation">wingspan − height · standing reach − height</span>
+        <span class="equation">max reach = standing reach + max vertical</span>
+        <span class="equation">BMI = 703 × weight ÷ height²</span>
+        <p>Separates functional length, explosiveness, and mass-for-height from raw measurements.</p>
+      </div>
+      <div class="formula-card">
+        <h4>Recent development</h4>
+        <span class="equation">classifier delta = last season − previous season</span>
+        <span class="equation">regression difference = last season − career</span>
+        <span class="equation">regression ratio = last season ÷ career</span>
+        <p>Captures direction of change. The three definitions are related but not interchangeable.</p>
+      </div>
+      <div class="formula-card">
+        <h4>Nonlinear draft capital</h4>
+        <span class="equation">log(1 + pick) · √pick · 1/pick · pick²</span>
+        <span class="equation">pick ≤ 5 · 10 · 14 · 30</span>
+        <p>Represents the steep, nonlinear connection between team investment and early NBA opportunity.</p>
+        <span class="tag teal">regression only</span>
+      </div>
+    </div>
+
+    <h3>Exactly what the winning feature sets contain</h3>
+    <table class="tight">
+      <thead><tr><th>Model</th><th>Family</th><th>Count</th><th>Examples</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="7"><strong>Classifier</strong></td><td>Anthropometric</td><td>8</td><td>Height, weight, wingspan, standing reach, body fat, hand dimensions.</td></tr>
+        <tr><td>Athletic drills</td><td>6</td><td>Vertical leaps, agility, sprint, bench press.</td></tr>
+        <tr><td>Combine-derived</td><td>5</td><td>Length differences, maximum reach, vertical difference, BMI.</td></tr>
+        <tr><td>Last NCAA season</td><td>32</td><td>Volume, efficiency, per-40 rates, and composites.</td></tr>
+        <tr><td>NCAA career</td><td>32</td><td>Career totals, recomputed rates, and composites.</td></tr>
+        <tr><td>Development + age</td><td>22</td><td>16 last-vs-previous signals and 6 age/upside signals.</td></tr>
+        <tr><td>Categorical</td><td>2</td><td><code>position</code> and <code>college_position</code>.</td></tr>
+        <tr><td rowspan="5"><strong>Regression</strong></td><td>Base pick, age, college</td><td>17</td><td>Pick, age, recent NCAA output, seven last-minus-career differences.</td></tr>
+        <tr><td>Draft-capital transforms</td><td>8</td><td>Four continuous transforms and four pick bands.</td></tr>
+        <tr><td>Age and interactions</td><td>6</td><td>Centered/squared age, youth, age-adjusted output, pick × age.</td></tr>
+        <tr><td>Production composites</td><td>8</td><td>Shrunk shooting, stocks, playmaking, and production.</td></tr>
+        <tr><td>Last-to-career ratios</td><td>9</td><td>Scale-aware recent form relative to career level.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout warning">
+      <strong>Materialized means already computed.</strong> The winning training scripts do not calculate these formulas on every run; the columns already exist in <code>draft_classification_advanced.parquet</code> and <code>drafted_players_advanced.parquet</code>. The JSON <code>feature_engineering</code> block in the minutes config records provenance. To add or change a formula, rebuild the parquet before adding the new column name to a config.
+    </div>
+  </section>
+
+  <section class="section page-break" id="configs">
+    <div class="kicker">06 · Configuration map</div>
+    <h2>How JSON fields control the Python code</h2>
+    <table>
+      <thead><tr><th>JSON field</th><th>What it controls</th><th>Where it is consumed</th></tr></thead>
+      <tbody>
+        <tr><td><code>data_path</code></td><td>The parquet or CSV modeling table.</td><td><code>train_model.py</code> or <code>classifier_workflow.py</code> loaders.</td></tr>
+        <tr><td><code>target</code></td><td>The column the estimator learns to predict.</td><td>Preparation, fitting, and metric functions.</td></tr>
+        <tr><td><code>numerical_features</code><br><code>categorical_features</code></td><td>The exact model schema and order.</td><td>The sklearn <code>ColumnTransformer</code>.</td></tr>
+        <tr><td><code>split</code></td><td>Year column and train/validation/test boundaries.</td><td><code>split_data</code> or <code>chronological_splits</code>.</td></tr>
+        <tr><td><code>model.name</code><br><code>model.hyperparameters</code></td><td>Estimator family and constructor arguments.</td><td><code>build_estimator</code> or <code>make_model</code>.</td></tr>
+        <tr><td><code>refit_on_train_validation</code></td><td>Whether the final estimator learns from data through 2019.</td><td>Both direct-training workflows.</td></tr>
+        <tr><td><code>log_transform_target</code></td><td>Whether regression fits <code>log1p(target)</code>.</td><td><code>train_model.make_pipeline</code>; false for the winner.</td></tr>
+        <tr><td><code>numerical_missing_strategy</code></td><td>Median imputation or native missing values.</td><td><code>classifier_workflow.make_pipeline</code>; native for the winner.</td></tr>
+        <tr><td><code>probability_calibration</code></td><td>Optional sigmoid map learned on validation.</td><td><code>fit_probability_calibrator</code>.</td></tr>
+        <tr><td><code>group_column</code></td><td>Player identity used to remove cross-period overlap.</td><td><code>purge_group_overlap</code>.</td></tr>
+        <tr><td><code>decision_rule_fitted</code></td><td>The frozen probability threshold or annual ranking fraction.</td><td><code>fit_configured_classifier</code> and <code>evaluate</code>.</td></tr>
+        <tr><td><code>tuning</code></td><td>Search space, validation folds, fixed candidates, seed, and search-only output paths.</td><td><code>tune_model.py</code> or <code>tune_classifier.py</code>, not ordinary fitting.</td></tr>
+        <tr><td><code>output_model_path</code><br><code>report_path</code></td><td>Direct frozen-run artifacts.</td><td>The two command-line training scripts.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout tip">
+      <strong>Documentation fields are intentional.</strong> Descriptions, evaluation notes, and feature-selection provenance do not change XGBoost. They travel with the experiment so a future reader can understand what was selected, when it was selected, and which claims are clean holdout evidence.
+    </div>
+  </section>
+
+  <section class="section page-break" id="tuning">
+    <div class="kicker">07 · Experiment discipline</div>
+    <h2>Keep frozen winners separate from new searches</h2>
+    <div class="grid-2">
+      <div class="model-card classifier">
+        <h3>Frozen reference</h3>
+        <p>A checked, named configuration whose parameters and reported holdout result should not change.</p>
+        <p><code>*_advanced_best.json</code></p>
+        <p class="small">Use it for reproduction, the toy notebooks, and comparison.</p>
+      </div>
+      <div class="model-card regression">
+        <h3>Search output</h3>
+        <p>A new experiment produced by tuning. It may be better or worse and needs its own filenames.</p>
+        <p><code>*_advanced_search_best.json</code></p>
+        <p class="small">Inspect validation evidence before deciding whether to promote it.</p>
+      </div>
+    </div>
+
+    <h3>What each tuner now does</h3>
+    <table class="tight">
+      <thead><tr><th></th><th>Regression tuner</th><th>Classification tuner</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Validation design</strong></td><td>Three expanding windows: 2014–15, 2016–17, 2018–19.</td><td>Six expanding annual folds: 2012 through 2017.</td></tr>
+        <tr><td><strong>Selection score</strong></td><td>Pooled out-of-fold RMSE; lower is better.</td><td>Mean annual normalized AP; higher is better.</td></tr>
+        <tr><td><strong>Candidate source</strong></td><td>Configured fixed candidates plus a reproducible sample from the search lists.</td><td>Configured fixed candidates plus a reproducible sample from the search lists.</td></tr>
+        <tr><td><strong>Leakage control</strong></td><td>Every fold ends before its validation years; test years are rejected.</td><td>Same chronological control, plus repeated-player purging.</td></tr>
+        <tr><td><strong>Protection</strong></td><td colspan="2">Both scripts refuse to write <code>best_config_path</code over the source config.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      For classification year <em>y</em>: <strong>normalized AP</strong> = (AP<sub>y</sub> − prevalence<sub>y</sub>) ÷ (1 − prevalence<sub>y</sub>). This gives random/prevalence-level ranking a baseline of zero and a perfect ranking a score of one before averaging years equally.
+    </div>
+
+    <pre># Reproduce the frozen winners
+python src/train_classifier.py --config configs/xgboost_draft_classifier_advanced_best.json
+python src/train_model.py --config configs/xgboost_minutes_advanced_best.json
+
+# Run small, separate search experiments
+python src/tune_classifier.py --config configs/xgboost_draft_classifier_advanced_best.json --n-iter 5
+python src/tune_model.py --config configs/xgboost_minutes_advanced_best.json --n-iter 5</pre>
+
+    <div class="callout warning">
+      <strong>A quick search does not redefine “best.”</strong> The <code>--n-iter</code> flag temporarily samples fewer candidates for a smoke test. Its output is deliberately written to separate <code>search</code> filenames and should not replace the historical winner merely because the script completed.
+    </div>
+  </section>
+
+  <section class="section page-break" id="modify">
+    <div class="kicker">08 · Working safely</div>
+    <h2>Common changes and the smallest correct workflow</h2>
+    <table>
+      <thead><tr><th>You want to…</th><th>Change</th><th>Then verify</th></tr></thead>
+      <tbody>
+        <tr><td>Try different XGBoost settings</td><td>Copy a config, give its model/results/best-config outputs new names, edit <code>tuning.search_space</code>, and run the tuner.</td><td>Compare pre-test validation first. Treat 2020–2022 as confirmation, not the selector.</td></tr>
+        <tr><td>Add an existing parquet column</td><td>Add its exact name to the numerical or categorical list in an experiment config.</td><td>Confirm timing and leakage safety; rerun chronological tuning.</td></tr>
+        <tr><td>Create a new feature formula</td><td>Implement it in the appropriate dataset builder/materializer, rebuild the advanced parquet, then configure it.</td><td>Check undefined denominators, missingness, units, and whether the formula uses only information available at prediction time.</td></tr>
+        <tr><td>Switch estimator families</td><td>Regression accepts Ridge/XGBoost; classification accepts logistic regression/XGBoost.</td><td>For logistic classification, use median imputation because logistic regression cannot consume native <code>NaN</code>.</td></tr>
+        <tr><td>Move the evaluation years</td><td>Update the split only after confirming the parquet contains those years.</td><td>Keep a genuinely later, untouched final period and rebuild all validation folds.</td></tr>
+        <tr><td>Score new classifier rows</td><td>Use the saved bundle’s schema, estimator, and calibrator.</td><td>Only apply the annual class rule to a complete yearly participant batch.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>A good experiment checklist</h3>
+    <ul class="checklist">
+      <li>Copy the frozen config instead of editing it in place.</li>
+      <li>Choose new output filenames before running anything.</li>
+      <li>Write one sentence describing the hypothesis behind the change.</li>
+      <li>Keep target, population, and split fixed when comparing feature or parameter choices.</li>
+      <li>Use validation to choose; inspect test only after the choice is frozen.</li>
+      <li>Save the resulting config and metrics together.</li>
+      <li>Run <code>python -m unittest discover -s tests -v</code>.</li>
+    </ul>
+
+    <div class="callout tip">
+      <strong>Human-readable code habit:</strong> comments should explain why a step exists—leakage prevention, timing, missingness, or basketball meaning. The function and variable names should explain what the code mechanically does.
+    </div>
+  </section>
+
+  <section class="section page-break" id="debug">
+    <div class="kicker">09 · Debugging</div>
+    <h2>When something goes wrong, start with the contract</h2>
+    <table>
+      <thead><tr><th>Symptom</th><th>Likely cause</th><th>What to inspect</th></tr></thead>
+      <tbody>
+        <tr><td>“Columns not found” or “Dataset is missing columns”</td><td>The JSON and parquet schemas do not match.</td><td>Spell the feature exactly, verify <code>data_path</code>, and rebuild the advanced table if the feature is new.</td></tr>
+        <tr><td>“Outcome or identity fields cannot be features”</td><td>The classifier leakage guard found a target, identity, calendar, linkage, or post-draft field.</td><td>Remove it. Do not bypass the guard to improve a metric.</td></tr>
+        <tr><td>Duplicate player-year error</td><td>The classification table no longer has one row per event.</td><td>Fix the upstream join or aggregation; do not silently drop an arbitrary duplicate.</td></tr>
+        <tr><td>One chronological split is empty</td><td>The configured years are absent or ordered incorrectly.</td><td>Inspect <code>draft_year</code> coverage and the five split boundaries.</td></tr>
+        <tr><td>AP or R² suddenly changed</td><td>A search output was mistaken for the frozen config, data changed, or a different split/model artifact was loaded.</td><td>Compare hyperparameters and filenames first; then confirm row counts and dependency versions.</td></tr>
+        <tr><td><code>.predict()</code> fails on classifier joblib</td><td>The advanced classifier is a dictionary bundle, not a bare pipeline.</td><td>Use <code>artifact["estimator"]</code>, its calibrator, and its decision rule—or reuse workflow helpers.</td></tr>
+        <tr><td>A classifier label changes when other rows are added</td><td>The annual top-fraction rule ranks a batch.</td><td>This is expected. Probabilities are row-level; annual labels are cohort-level.</td></tr>
+        <tr><td>Missing values look like zeros</td><td>A custom preprocessing change may have destroyed missingness semantics.</td><td>Numeric absence should be <code>NaN</code>; only categorical absence becomes the string <code>missing</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Saved artifact anatomy</h3>
+    <div class="grid-2">
+      <div class="model-card regression">
+        <h4>Regression joblib</h4>
+        <p>A fitted sklearn <code>Pipeline</code> containing the numeric preprocessor and XGBoost regressor.</p>
+        <pre>model = joblib.load(path)
+minutes = model.predict(rows[features])</pre>
+      </div>
+      <div class="model-card classifier">
+        <h4>Classification joblib</h4>
+        <p>A versioned dictionary containing estimator, sigmoid calibrator, decision rule, target, features, and training cutoff.</p>
+        <pre>artifact = joblib.load(path)
+model = artifact["estimator"]
+rule = artifact["decision_rule"]</pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="section page-break" id="sources">
+    <div class="kicker">10 · Source map</div>
+    <h2>Where to read next</h2>
+    <table class="tight">
+      <thead><tr><th>Question</th><th>Primary source</th></tr></thead>
+      <tbody>
+        <tr><td>How does direct classifier training run?</td><td class="path">src/train_classifier.py</td></tr>
+        <tr><td>Where are classifier preparation, leakage checks, calibration, annual decisions, metrics, and artifacts?</td><td class="path">src/classifier_workflow.py</td></tr>
+        <tr><td>How are classifier parameters compared?</td><td class="path">src/tune_classifier.py · src/tuning.py</td></tr>
+        <tr><td>How does regression preparation and fitting work?</td><td class="path">src/train_model.py</td></tr>
+        <tr><td>How are regression parameters compared across expanding folds?</td><td class="path">src/tune_model.py · src/tuning.py</td></tr>
+        <tr><td>How is the base Combine classification cohort and exact target built?</td><td class="path">nba_draft_data_collection/build_draft_classification_dataset.py</td></tr>
+        <tr><td>How are NCAA histories, rates, development, and Combine composites added?</td><td class="path">nba_draft_data_collection/build_enriched_draft_classification_dataset.py</td></tr>
+        <tr><td>How are drafted-player college histories and the three-year minutes target built?</td><td class="path">nba_draft_data_collection/build_model_dataset_v3.py</td></tr>
+        <tr><td>Where is advanced materialization provenance?</td><td class="path">.archive/src/build_advanced_model_datasets.py · .archive/src/advanced_feature_engineering.py · .archive/src/feature_engineering.py</td></tr>
+        <tr><td>Where are the frozen schemas and hyperparameters?</td><td class="path">configs/xgboost_draft_classifier_advanced_best.json · configs/xgboost_minutes_advanced_best.json</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Interactive walkthroughs</h3>
+    <div class="grid-2">
+      <div class="model-card classifier">
+        <h4><a href="../notebooks/evaluate_best_classification_model.ipynb">Train the best classification model</a></h4>
+        <p>Loads the frozen config, fits the same calibrated workflow, reports holdout metrics and a precision–recall curve, and inspects importance.</p>
+      </div>
+      <div class="model-card regression">
+        <h4><a href="../notebooks/evaluate_best_regression_model.ipynb">Train the best regression model</a></h4>
+        <p>Loads the frozen config, shows preprocessing, fits once, evaluates the holdout, plots residuals, and inspects example predictions.</p>
+      </div>
+    </div>
+
+    <h3>Interpretation boundaries</h3>
+    <ul>
+      <li>The classifier describes players who reached this consistently observed Combine cohort, not every NCAA player.</li>
+      <li>The regression describes drafted players and deliberately includes draft position. It is not a talent-only or fully pre-draft model.</li>
+      <li>Predictions are associations, not estimates of what would happen if a team changed a player’s draft position, role, or development plan.</li>
+      <li>Unresolved NCAA histories remain missing. Native missing handling preserves the gap but cannot eliminate selection bias in who links successfully.</li>
+      <li>Multiple experiments have been viewed on the 2020–2022 period. A future cohort is the appropriate next independent confirmation.</li>
+      <li>For classification, AP and ROC-AUC are the clean frozen ranking claims. The repaired annual decision rule and probability calibration deserve confirmation on future data.</li>
+    </ul>
+
+    <div class="callout">
+      <strong>Companion reference:</strong> the <a href="model_preprocessing_report.pdf">Preprocessing and Validation Protocol</a> contains the exhaustive feature inventories, linkage rules, missing-value treatment, validation evidence, and methodological caveats. This guide is the shorter map for understanding and changing the code.
+    </div>
+
+    <div class="footer-note">Prepared from the checked-in code, frozen configurations, advanced parquet schemas, archived experiment reports, and refactored classifier workflow in <code>D:\Mestrado\nba-draft</code>. All links are relative so the HTML and rendered PDF can remain with the repository.</div>
+  </section>
+</main>
+</body>
+</html>

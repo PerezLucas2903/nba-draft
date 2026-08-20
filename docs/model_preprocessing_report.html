@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NBA Draft Models — Preprocessing and Validation Protocol</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #596579;
+      --navy: #152b49;
+      --blue: #2766a3;
+      --teal: #138277;
+      --gold: #d69b2d;
+      --paper: #ffffff;
+      --wash: #f2f6fa;
+      --line: #d9e2ec;
+      --warning: #fff4db;
+      --warning-line: #d69b2d;
+      --good: #e9f6f2;
+      --good-line: #138277;
+    }
+
+    * { box-sizing: border-box; }
+    html { font-size: 10.4pt; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: "Segoe UI", Arial, sans-serif;
+      line-height: 1.48;
+    }
+    @page { size: A4; margin: 17mm 16mm 18mm; }
+    @media print {
+      .cover { margin: -17mm -16mm -18mm; height: 297mm; }
+      a { color: inherit; text-decoration: none; }
+      .page-break { break-before: page; }
+      .avoid, table, .callout, .flow, pre { break-inside: avoid; }
+      thead { display: table-header-group; }
+      tr { break-inside: avoid; }
+    }
+
+    .cover {
+      min-height: 297mm;
+      padding: 28mm 24mm 22mm;
+      color: white;
+      background:
+        radial-gradient(circle at 88% 12%, rgba(62, 170, 158, .35), transparent 27%),
+        linear-gradient(145deg, #10233d 0%, #174d72 58%, #157c75 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .cover .eyebrow {
+      color: #aee8df;
+      font-size: 10pt;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .cover h1 {
+      margin: 16mm 0 5mm;
+      max-width: 150mm;
+      color: #ffffff;
+      font-size: 34pt;
+      line-height: 1.05;
+      letter-spacing: -.035em;
+    }
+    .cover .subtitle {
+      max-width: 140mm;
+      font-size: 15pt;
+      line-height: 1.42;
+      color: #d9edf4;
+    }
+    .cover-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5mm;
+      margin-top: 22mm;
+    }
+    .cover-card {
+      padding: 5mm;
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 3mm;
+      background: rgba(255,255,255,.08);
+    }
+    .cover-card b { display: block; font-size: 13pt; margin-bottom: 1mm; }
+    .cover-card span { color: #d9edf4; font-size: 9.5pt; }
+    .cover .meta {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255,255,255,.22);
+      padding-top: 5mm;
+      color: #c9e5eb;
+      font-size: 9pt;
+    }
+
+    main { max-width: 178mm; margin: 0 auto; }
+    h1, h2, h3, h4 { color: var(--navy); break-after: avoid; }
+    h2 {
+      margin: 0 0 5mm;
+      padding-bottom: 2.5mm;
+      font-size: 21pt;
+      line-height: 1.12;
+      border-bottom: 2px solid var(--teal);
+    }
+    h3 { margin: 7mm 0 2.5mm; font-size: 14pt; }
+    h4 { margin: 4mm 0 1.5mm; font-size: 11pt; }
+    p { margin: 0 0 3.2mm; }
+    ul, ol { margin: 1.5mm 0 4mm 5mm; padding-left: 4mm; }
+    li { margin: 1.2mm 0; }
+    code, pre, .mono {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: .91em;
+    }
+    code { color: #164d73; background: #eef4f8; padding: .2mm .7mm; border-radius: 1mm; }
+    pre {
+      margin: 3mm 0 5mm;
+      padding: 4mm;
+      border-left: 3px solid var(--blue);
+      background: #eef4f8;
+      white-space: pre-wrap;
+      line-height: 1.55;
+    }
+    .section { padding-top: 5mm; }
+    .lede { color: var(--muted); font-size: 11.5pt; max-width: 165mm; }
+    .small { color: var(--muted); font-size: 8.8pt; }
+    .kicker {
+      margin-bottom: 2mm;
+      color: var(--teal);
+      font-size: 9pt;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .callout {
+      margin: 4mm 0;
+      padding: 4mm 5mm;
+      border-left: 3px solid var(--good-line);
+      border-radius: 1mm;
+      background: var(--good);
+    }
+    .callout.warning { border-color: var(--warning-line); background: var(--warning); }
+    .callout strong { color: var(--navy); }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 3mm;
+      margin: 4mm 0 6mm;
+    }
+    .stat {
+      min-height: 24mm;
+      padding: 3.5mm;
+      border: 1px solid var(--line);
+      border-radius: 2mm;
+      background: var(--wash);
+    }
+    .stat .value { color: var(--blue); font-size: 18pt; line-height: 1.1; font-weight: 750; }
+    .stat .label { margin-top: 1.5mm; color: var(--muted); font-size: 8.5pt; }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2.5mm;
+      margin: 5mm 0 7mm;
+      counter-reset: flow;
+    }
+    .flow > div {
+      position: relative;
+      min-height: 30mm;
+      padding: 3.5mm 3mm;
+      border-top: 3px solid var(--teal);
+      background: var(--wash);
+      counter-increment: flow;
+    }
+    .flow > div::before {
+      content: counter(flow, decimal-leading-zero);
+      display: block;
+      color: var(--teal);
+      font-size: 8pt;
+      font-weight: 800;
+      letter-spacing: .08em;
+      margin-bottom: 1.5mm;
+    }
+    .flow b { display: block; margin-bottom: 1mm; }
+    .flow span { color: var(--muted); font-size: 8.3pt; line-height: 1.3; }
+
+    table { width: 100%; margin: 3mm 0 6mm; border-collapse: collapse; font-size: 9pt; }
+    th, td { padding: 2.4mm 2.6mm; border-bottom: 1px solid var(--line); vertical-align: top; text-align: left; }
+    th { color: white; background: var(--navy); font-weight: 650; }
+    tbody tr:nth-child(even) { background: #f6f8fb; }
+    td:first-child { font-weight: 600; color: #253750; }
+    .tight td, .tight th { padding: 1.7mm 2mm; }
+
+    .formula-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; margin: 3mm 0 5mm; }
+    .formula {
+      padding: 3mm 3.5mm;
+      border: 1px solid var(--line);
+      border-radius: 1.5mm;
+    }
+    .formula b { display: block; color: var(--navy); margin-bottom: 1mm; }
+    .formula .eq { color: var(--blue); font-family: Cambria, Georgia, serif; }
+
+    .feature-block {
+      margin: 3mm 0;
+      padding: 3.5mm;
+      border: 1px solid var(--line);
+      border-radius: 2mm;
+      break-inside: avoid;
+    }
+    .feature-block h4 { margin-top: 0; }
+    .feature-list { color: #34445c; font-family: Consolas, monospace; font-size: 7.7pt; line-height: 1.45; }
+    .tag {
+      display: inline-block;
+      margin: 0 1mm 1mm 0;
+      padding: .7mm 1.7mm;
+      border-radius: 6mm;
+      color: #155f58;
+      background: #dff2ee;
+      font-size: 8pt;
+      font-weight: 650;
+    }
+    .source-map td:first-child { width: 32%; }
+    .footer-note { margin-top: 8mm; padding-top: 3mm; border-top: 1px solid var(--line); color: var(--muted); font-size: 8pt; }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div>
+      <div class="eyebrow">NBA Draft modeling project</div>
+      <h1>Preprocessing and Validation Protocol</h1>
+      <p class="subtitle">A complete, model-facing record of how the advanced draft-entry classifier and early-career minutes regressor turn processed basketball data into fitted, evaluated artifacts—and why each transformation exists.</p>
+      <div class="cover-grid">
+        <div class="cover-card">
+          <b>Draft-entry classifier</b>
+          <span>Combine participants · 107 predictors · calibrated annual ranking</span>
+        </div>
+        <div class="cover-card">
+          <b>Minutes regressor</b>
+          <span>Drafted players · 48 predictors · raw three-year NBA minutes</span>
+        </div>
+      </div>
+    </div>
+    <div class="meta">
+      <span>Implementation snapshot: 19 August 2026</span>
+      <span>Repository: nba-draft</span>
+    </div>
+  </section>
+
+  <main>
+    <section class="section page-break">
+      <div class="kicker">Scope and interpretation</div>
+      <h2>What this report covers</h2>
+      <p class="lede">This document records every model-facing preprocessing step used by the restored best configurations: cohort assembly, target-independent linkage, feature construction, fit-time transformations, temporal validation, group-overlap control, probability calibration, and final decision logic.</p>
+      <div class="callout">
+        <strong>Scope boundary.</strong> This is a modeling-method report, not a catalogue of every HTTP request or source-file normalization inside the separate data-collection package. It starts where raw Combine, NCAA, draft-history, and NBA outcome tables are converted into modeling rows.
+      </div>
+
+      <table>
+        <thead><tr><th>Model</th><th>Question</th><th>Population</th><th>Frozen configuration</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Draft entry</td>
+            <td>Will this Combine participant be drafted in the same year?</td>
+            <td>Players present in all four collected Combine source rosters, 2009–2022</td>
+            <td><code>configs/xgboost_draft_classifier_advanced_best.json</code></td>
+          </tr>
+          <tr>
+            <td>NBA minutes</td>
+            <td>How many regular-season minutes will a drafted player receive in his first three NBA seasons?</td>
+            <td>Drafted players with a known three-season minutes target, 2009–2022</td>
+            <td><code>configs/xgboost_minutes_advanced_best.json</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>End-to-end flow</h3>
+      <div class="flow">
+        <div><b>Build cohort</b><span>Create one player–draft-year row and define the task population.</span></div>
+        <div><b>Join history</b><span>Attach pre-draft NCAA information without consulting the target.</span></div>
+        <div><b>Engineer features</b><span>Create rates, deltas, physical combinations, and reliability-aware summaries.</span></div>
+        <div><b>Fit in time</b><span>Fit preprocessing and XGBoost only on chronologically eligible rows.</span></div>
+        <div><b>Freeze and test</b><span>Refit through 2019, then evaluate the 2020–2022 holdout.</span></div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat"><div class="value">858</div><div class="label">classifier player-year rows</div></div>
+        <div class="stat"><div class="value">107</div><div class="label">classifier predictors (105 numeric + 2 categorical)</div></div>
+        <div class="stat"><div class="value">838</div><div class="label">minutes-regression rows</div></div>
+        <div class="stat"><div class="value">48</div><div class="label">minutes-regression numeric predictors</div></div>
+      </div>
+    </section>
+
+    <section class="section page-break">
+      <div class="kicker">Part I · Classification data</div>
+      <h2>Constructing the draft-entry cohort</h2>
+
+      <h3>1. Define a stable Combine population</h3>
+      <ol>
+        <li>Column names and positions are normalized before the sources are combined.</li>
+        <li>Measurements are converted to numeric values. Invalid numeric text becomes missing rather than a fabricated zero.</li>
+        <li>Rows without a usable player-year key are removed.</li>
+        <li>Duplicate player-year measurements within a source are collapsed: numeric values use their mean; position uses a deterministic mode with a stable tie-break.</li>
+        <li>Four Combine sources are inner-joined, so every retained player belongs to the consistently observed post-Combine cohort.</li>
+        <li>Columns that are globally empty after assembly are dropped. Individual missing measurements remain missing.</li>
+      </ol>
+      <div class="callout">
+        <strong>Why.</strong> Requiring the common four-source roster makes year-to-year membership more comparable. Retaining genuine measurement gaps avoids inventing information and avoids “availability” flags that might mostly reveal the collection era.
+      </div>
+
+      <h3>2. Define the target without model features</h3>
+      <p><code>drafted = 1</code> only when the normalized NBA player identifier and draft year occur together in official draft history; otherwise it is <code>0</code>. Draft pick, round, team, and every post-draft NBA outcome remain audit columns only and are forbidden as predictors.</p>
+
+      <h3>3. Attach NCAA history without looking at drafted status</h3>
+      <table class="tight">
+        <thead><tr><th>Step</th><th>Implementation</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td>Candidate linkage</td><td>Exact compact-name matches in the same season; limited qualifier handling for known UNC/UMD ambiguity; otherwise a unique athlete within the prior six seasons.</td><td>Keep the linkage deterministic and independent of the outcome.</td></tr>
+          <tr><td>Ambiguity</td><td>Ambiguous or unresolved histories remain missing.</td><td>Do not choose a college identity because the player was drafted.</td></tr>
+          <tr><td>Transfers</td><td>Team rows are summed; primary team and position come from the highest-minute row, then games/team provide deterministic tie-breaks.</td><td>Represent the player’s full season while retaining one categorical position.</td></tr>
+          <tr><td>Lookback</td><td>Only the draft season and the preceding six seasons are eligible.</td><td>Prevent future college information from entering the feature vector.</td></tr>
+          <tr><td>Age</td><td>Age is measured on July 1 of the draft year; values outside 16–35 become missing.</td><td>Use a common basketball-age reference and reject implausible source values.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section page-break">
+      <div class="kicker">Part I · Feature construction</div>
+      <h2>Rates, physical traits, and development signals</h2>
+      <p>All feature engineering is target-blind. It uses only measurements already attached to the prospect, or—in transformations that were considered but not selected—other prospects in the same event year.</p>
+
+      <h3>Safe rate calculations</h3>
+      <div class="formula-grid">
+        <div class="formula"><b>Per-40 production</b><span class="eq">40 × statistic ÷ minutes</span></div>
+        <div class="formula"><b>Effective FG%</b><span class="eq">(FGM + 0.5 × 3PM) ÷ FGA</span></div>
+        <div class="formula"><b>True shooting</b><span class="eq">points ÷ [2 × (FGA + 0.44 × FTA)]</span></div>
+        <div class="formula"><b>Playmaking rates</b><span class="eq">AST ÷ TOV; 3PA ÷ FGA; FTA ÷ FGA</span></div>
+      </div>
+      <p>Zero denominators, infinities, and undefined rates are changed to missing. No undefined basketball ratio is encoded as zero.</p>
+
+      <h3>Combine-derived measurements</h3>
+      <table class="tight">
+        <thead><tr><th>Feature</th><th>Formula</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>Length advantage</td><td>wingspan − height without shoes</td><td>Separate reach/length from raw height.</td></tr>
+          <tr><td>Standing reach advantage</td><td>standing reach − height without shoes</td><td>Represent functional reach.</td></tr>
+          <tr><td>Maximum reach</td><td>standing reach + max vertical</td><td>Combine static length and explosiveness.</td></tr>
+          <tr><td>Vertical improvement</td><td>max vertical − standing vertical</td><td>Describe the run-up contribution.</td></tr>
+          <tr><td>BMI</td><td>703 × weight ÷ height²</td><td>Compact mass-for-height measure; interpreted cautiously for athletes.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>NCAA summaries</h3>
+      <p>Last-season and career values are produced separately. Career totals are aggregated before rates are recomputed. Development features are last-season minus earlier/career values, which captures direction of change rather than only the final level.</p>
+      <div class="formula-grid">
+        <div class="formula"><b>Stocks</b><span class="eq">steals per 40 + blocks per 40</span></div>
+        <div class="formula"><b>Playmaking margin</b><span class="eq">assists per 40 − turnovers per 40</span></div>
+        <div class="formula"><b>Production index</b><span class="eq">PTS + REB + AST + 2(STL + BLK) − TOV, all per 40</span></div>
+        <div class="formula"><b>Usage proxy</b><span class="eq">FGA + 0.44 × FTA + TOV, all per 40</span></div>
+        <div class="formula"><b>Shrunk 3P%</b><span class="eq">(3PM + 0.35 × 40) ÷ (3PA + 40)</span></div>
+        <div class="formula"><b>Shrunk FT%</b><span class="eq">(FTM + 0.72 × 30) ÷ (FTA + 30)</span></div>
+        <div class="formula"><b>Youth score</b><span class="eq">23 − age; also age − 21 and age²</span></div>
+        <div class="formula"><b>Age-adjusted output</b><span class="eq">youth score × scoring or stocks</span></div>
+      </div>
+      <div class="callout">
+        <strong>Why shrink percentages.</strong> A raw shooting percentage based on very few attempts is unstable. The fixed prior adds a modest amount of league-like evidence without learning a statistic from the future folds.
+      </div>
+    </section>
+
+    <section class="section page-break">
+      <div class="kicker">Part II · Fit-time classification</div>
+      <h2>Preprocessing inside the model pipeline</h2>
+      <p>These transformations are fitted anew wherever a model is fitted. Fold-local fitting prevents future validation rows from determining imputation or category levels.</p>
+
+      <table>
+        <thead><tr><th>Operation</th><th>Exact behavior in the advanced config</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Schema validation</td><td>Require configured features, target, year, ID/group columns; require one row per <code>(nba_player_id, draft_year)</code>; target must be binary.</td><td>Fail early on a stale or duplicated dataset.</td></tr>
+          <tr><td>Leakage guard</td><td>Reject target, draft pick/round/team, IDs/names, absolute year/season fields, match metadata, and every <code>nba_*</code> outcome feature.</td><td>Only information available before the draft decision may enter.</td></tr>
+          <tr><td>Numeric cleanup</td><td>Coerce to numeric; replace ±infinity with <code>NaN</code>.</td><td>Give undefined values one consistent representation.</td></tr>
+          <tr><td>Numeric missingness</td><td><code>numerical_missing_strategy = native</code>: pass values and <code>NaN</code> directly to XGBoost. No median, standardization, or missing indicator.</td><td>XGBoost learns a default missing branch at each split; preserving the gap avoids invented median measurements.</td></tr>
+          <tr><td>Categorical missingness</td><td>Convert pandas <code>pd.NA</code> to ordinary <code>np.nan</code>, then fill with literal <code>missing</code>.</td><td>Fix sklearn’s ambiguous-null behavior and retain “not observed” as a category.</td></tr>
+          <tr><td>Categorical encoding</td><td>Float32 one-hot encoding; unknown categories are ignored.</td><td>A tree receives numeric columns and future unseen position labels do not crash scoring.</td></tr>
+          <tr><td>Class weighting</td><td>The tuned XGBoost parameter <code>scale_pos_weight = 0.3</code> is retained.</td><td>The cohort has more positives than negatives; the value was selected in pre-test folds.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warning">
+        <strong>Missing does not mean zero.</strong> A missing vertical leap, NCAA history, or shooting rate is never converted to a physical measurement of zero. Native tree handling or the explicit categorical sentinel preserves that distinction.
+      </div>
+
+      <h3>Chronological and entity-safe splits</h3>
+      <table class="tight">
+        <thead><tr><th>Period</th><th>Years</th><th>Rows</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>Training</td><td>2009–2017</td><td>510</td><td>Base estimation and calibration-model training.</td></tr>
+          <tr><td>Validation</td><td>2018–2019</td><td>146</td><td>Dedicated sigmoid calibration and annual decision-rule fitting.</td></tr>
+          <tr><td>Test</td><td>2020–2022</td><td>202</td><td>Final chronological holdout; not used to fit transformations or parameters.</td></tr>
+        </tbody>
+      </table>
+      <p>Before calibration, six earlier rows belonging to players who reappear in validation are removed from the training data. Before the final refit, eight train/validation rows belonging to players who reappear in test are removed. The final estimator therefore fits 648 rows.</p>
+    </section>
+
+    <section class="section page-break">
+      <div class="kicker">Part III · Selection and evaluation</div>
+      <h2>Hyperparameter tuning without using the holdout</h2>
+      <h3>Expanding annual folds</h3>
+      <table class="tight">
+        <thead><tr><th>Validation year</th><th>Training cutoff</th><th>Training rows after purge</th><th>Validation rows</th></tr></thead>
+        <tbody>
+          <tr><td>2012</td><td>≤ 2011</td><td>152</td><td>61</td></tr>
+          <tr><td>2013</td><td>≤ 2012</td><td>213</td><td>63</td></tr>
+          <tr><td>2014</td><td>≤ 2013</td><td>276</td><td>56</td></tr>
+          <tr><td>2015</td><td>≤ 2014</td><td>332</td><td>58</td></tr>
+          <tr><td>2016</td><td>≤ 2015</td><td>390</td><td>56</td></tr>
+          <tr><td>2017</td><td>≤ 2016</td><td>441</td><td>64</td></tr>
+        </tbody>
+      </table>
+      <p>Every candidate receives a newly fitted preprocessor and estimator in every fold. The configured search evaluates 180 reproducibly sampled candidates plus two fixed reference candidates, deduplicated if they coincide.</p>
+
+      <h3>Selection metric</h3>
+      <div class="callout">
+        For year <em>y</em>: <strong>normalized AP</strong> = (AP<sub>y</sub> − prevalence<sub>y</sub>) ÷ (1 − prevalence<sub>y</sub>). The candidate score is the unweighted mean across years.
+      </div>
+      <p>This converts each year’s no-skill baseline to zero and a perfect ranking to one. Macro-averaging prevents a large draft class or a high-positive-rate year from dominating model selection. The winning pre-test score was <strong>0.560074</strong>.</p>
+
+      <h3>Frozen XGBoost parameters</h3>
+      <table class="tight">
+        <thead><tr><th>Parameter</th><th>Value</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><code>n_estimators</code> / <code>learning_rate</code></td><td>400 / 0.035</td><td>Many small boosting steps.</td></tr>
+          <tr><td><code>max_depth</code> / <code>min_child_weight</code></td><td>1 / 3</td><td>Strongly regularized shallow interactions.</td></tr>
+          <tr><td><code>subsample</code> / <code>colsample_bytree</code></td><td>0.65 / 0.8</td><td>Row and feature sampling for variance control.</td></tr>
+          <tr><td><code>reg_alpha</code> / <code>reg_lambda</code></td><td>0 / 3</td><td>L1/L2 leaf regularization.</td></tr>
+          <tr><td><code>gamma</code> / <code>max_delta_step</code></td><td>0.5 / 1</td><td>Conservative new splits and bounded leaf updates.</td></tr>
+          <tr><td><code>scale_pos_weight</code></td><td>0.3</td><td>Class contribution selected in the same pre-test folds.</td></tr>
+          <tr><td>Reproducibility</td><td><code>hist</code>, seed 42</td><td>Deterministic configuration for the recorded software stack.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section page-break">
+      <div class="kicker">Part III · Calibration and decisions</div>
+      <h2>From ranking score to reported probability and class</h2>
+      <h3>Sigmoid probability calibration</h3>
+      <ol>
+        <li>Remove six training rows whose player appears in 2018–2019.</li>
+        <li>Fit a separate XGBoost model through 2017 and score 2018–2019.</li>
+        <li>Clip raw probabilities away from exactly 0 and 1, then convert them to log-odds.</li>
+        <li>Fit logistic regression (<code>C=1</code>, <code>lbfgs</code>, seed 42) from raw log-odds to the validation labels.</li>
+        <li>Freeze this map and apply it to scores from the final estimator.</li>
+      </ol>
+      <p>Fitted map: coefficient <strong>0.448170</strong>, intercept <strong>0.308034</strong>. Calibration changes probability scale but, because it is monotonic, it does not change AP, ROC-AUC, or within-year ranking.</p>
+
+      <h3>Annual top-fraction rule</h3>
+      <p>The validation positive rate is 92/146 = <strong>0.6301369863</strong>. For every draft year independently, the model:</p>
+      <ol>
+        <li>sorts calibrated scores descending with a stable tie-break;</li>
+        <li>selects <code>floor(0.6301369863 × year_rows + 0.5)</code> prospects;</li>
+        <li>labels those prospects as predicted drafted.</li>
+      </ol>
+      <div class="callout warning">
+        <strong>Operational scope.</strong> This rule is valid only when the input contains the complete Combine-participant batch for each scored year. It is not an independent one-row probability threshold.
+      </div>
+
+      <h3>Final refit and holdout</h3>
+      <p>The final XGBoost estimator is refitted on train + validation after removing eight earlier rows for players who appear in test. The frozen calibrator and annual rule are then applied to 2020–2022.</p>
+      <table class="tight">
+        <thead><tr><th>Holdout metric</th><th>Value</th><th>Interpretation</th></tr></thead>
+        <tbody>
+          <tr><td>Average precision</td><td>0.824542</td><td>Primary ranking quality; unchanged by sigmoid calibration.</td></tr>
+          <tr><td>ROC-AUC</td><td>0.750620</td><td>Pairwise ranking discrimination.</td></tr>
+          <tr><td>Raw / calibrated log loss</td><td>0.593872 / 0.602714</td><td>Calibration did not improve this holdout’s log loss.</td></tr>
+          <tr><td>Balanced accuracy</td><td>0.657051</td><td>Annual-rule class performance.</td></tr>
+          <tr><td>Precision / recall / F1</td><td>0.732283 / 0.750000 / 0.741036</td><td>Annual-rule operating metrics.</td></tr>
+          <tr><td>Confusion matrix</td><td>TN 44 · FP 34 · FN 31 · TP 93</td><td>202 total test rows.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout warning">
+        <strong>Evidence boundary.</strong> The feature family and XGBoost parameters were frozen before holdout scoring, so AP and ROC-AUC are the clean ranking claims. The annual decision rule was repaired after the first holdout run exposed a refit score-scale mismatch; its thresholded metrics require confirmation on a future cohort. The calibrator was learned from a train-only model but applied to a refitted model, so calibrated probability quality is also not a pristine independent claim.
+      </div>
+    </section>
+
+    <section class="section page-break">
+      <div class="kicker">Part IV · Regression</div>
+      <h2>Advanced early-career minutes preprocessing</h2>
+      <p>The regression task is conditional: it asks about early NBA playing time only after a player has been drafted. Draft capital is therefore deliberately included. This is a different estimand from a strictly pre-draft college-only model.</p>
+
+      <h3>Rows and target</h3>
+      <ul>
+        <li>Input: <code>drafted_players_advanced.parquet</code>, 838 retained rows.</li>
+        <li>Target: raw <code>nba_min_3y</code>, the sum of regular-season minutes across the first three NBA seasons.</li>
+        <li>Rows missing the target or draft year are dropped.</li>
+        <li>The configured target is <strong>not</strong> log-transformed.</li>
+        <li>Splits: 540 train rows through 2017, 120 validation rows in 2018–2019, and 178 test rows in 2020–2022.</li>
+      </ul>
+
+      <h3>Materialized feature engineering</h3>
+      <table class="tight">
+        <thead><tr><th>Family</th><th>Transformation</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Missing age</td><td>Binary indicator for missing draft-year age.</td><td>Median imputation otherwise hides that age was unavailable.</td></tr>
+          <tr><td>College stocks</td><td>Last-season steals + blocks per 40, requiring both inputs.</td><td>Compact defensive-event signal while preserving partial missingness.</td></tr>
+          <tr><td>Development differences</td><td>Last season − career for seven configured statistics.</td><td>Represent recent improvement or decline.</td></tr>
+          <tr><td>Draft capital</td><td>log, square root, inverse, square, top-5/top-10/lottery/first-round flags.</td><td>Early opportunity is strongly nonlinear in pick number.</td></tr>
+          <tr><td>Age and interaction</td><td>Centered age, age², youth score, pick × centered age.</td><td>Allow nonlinear age effects and investment-by-age interaction.</td></tr>
+          <tr><td>College composites</td><td>Shrunk shooting, stocks, playmaking margin, production index, age-adjusted output.</td><td>Stabilize small samples and expose basketball-relevant combinations.</td></tr>
+          <tr><td>Last/career ratios</td><td>Last-season value ÷ career value; zero denominators become missing.</td><td>Scale-aware development signal.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Fit-time pipeline</h3>
+      <ol>
+        <li>Validate all configured columns; numeric-coerce target, year, and 48 predictors; replace infinities with missing.</li>
+        <li>Fit median imputation on the training rows for every numeric predictor.</li>
+        <li>Fit standardization (zero mean, unit variance) after imputation.</li>
+        <li>Fit the configured XGBoost regressor. Although trees do not require scaling, the generic regression pipeline applies it consistently.</li>
+        <li>For the frozen best run, refit on train + validation and report 2020–2022 as the holdout.</li>
+      </ol>
+      <div class="callout warning">
+        <strong>Reproducibility disclosure.</strong> The JSON <code>feature_engineering</code> block is provenance; current <code>train_model.py</code> does not execute it. The configured derived columns are already materialized in the parquet file. Current <code>tune_model.py</code> does replay the configured three expanding validation folds and fixed reference candidate, while direct training uses the frozen winning parameters without starting a search.
+      </div>
+
+      <table class="tight">
+        <thead><tr><th>Frozen holdout result</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Test rows</td><td>178 (2020–2022)</td></tr>
+          <tr><td>R²</td><td>0.481949</td></tr>
+          <tr><td>RMSE</td><td>1,568.183 minutes</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section page-break">
+      <div class="kicker">Appendix A</div>
+      <h2>Advanced classifier feature inventory</h2>
+      <p>The selected <code>age_college_composites</code> family contains exactly 105 numeric and two categorical predictors. Relative draft-class percentiles and last-to-career ratio families were generated during exploration but are not in this winner.</p>
+
+      <div class="feature-block">
+        <h4>Anthropometric measurements · 8</h4>
+        <div class="feature-list">combine_anthro_height_wo_shoes · combine_anthro_height_w_shoes · combine_anthro_weight · combine_anthro_wingspan · combine_anthro_standing_reach · combine_anthro_body_fat_pct · combine_anthro_hand_length · combine_anthro_hand_width</div>
+      </div>
+      <div class="feature-block">
+        <h4>Athletic drills · 6</h4>
+        <div class="feature-list">combine_drill_standing_vertical_leap · combine_drill_max_vertical_leap · combine_drill_lane_agility_time · combine_drill_modified_lane_agility_time · combine_drill_three_quarter_sprint · combine_drill_bench_press</div>
+      </div>
+      <div class="feature-block">
+        <h4>Combine-derived · 5</h4>
+        <div class="feature-list">combine_derived_wingspan_minus_height · combine_derived_standing_reach_minus_height · combine_derived_max_reach · combine_derived_max_minus_standing_vertical · combine_derived_bmi</div>
+      </div>
+      <div class="feature-block">
+        <h4>Last NCAA season · 32</h4>
+        <div class="feature-list">college_last_season_gap · college_last_games_played · college_last_games_started · college_last_minutes · college_last_minutes_per_game · college_last_start_rate · college_last_field_goals_attempted · college_last_three_point_field_goals_attempted · college_last_free_throws_attempted · college_last_fg_pct · college_last_three_pct · college_last_ft_pct · college_last_efg_pct · college_last_ts_pct · college_last_points_per_40 · college_last_rebounds_per_40 · college_last_assists_per_40 · college_last_steals_per_40 · college_last_blocks_per_40 · college_last_turnovers_per_40 · college_last_field_goal_attempts_per_40 · college_last_three_point_attempts_per_40 · college_last_free_throw_attempts_per_40 · college_last_assist_turnover_ratio · college_last_three_attempt_rate · college_last_free_throw_rate · college_last_ft_pct_shrunk · college_last_playmaking_margin_per_40 · college_last_production_index · college_last_stocks_per_40_advanced · college_last_three_pct_shrunk · college_last_usage_proxy_per_40</div>
+      </div>
+      <div class="feature-block">
+        <h4>NCAA career · 32</h4>
+        <div class="feature-list">college_career_seasons · college_career_span_years · college_career_games_played · college_career_minutes · college_career_minutes_per_game · college_career_start_rate · college_career_field_goals_attempted · college_career_three_point_field_goals_attempted · college_career_free_throws_attempted · college_career_fg_pct · college_career_three_pct · college_career_ft_pct · college_career_efg_pct · college_career_ts_pct · college_career_points_per_40 · college_career_rebounds_per_40 · college_career_assists_per_40 · college_career_steals_per_40 · college_career_blocks_per_40 · college_career_turnovers_per_40 · college_career_field_goal_attempts_per_40 · college_career_three_point_attempts_per_40 · college_career_free_throw_attempts_per_40 · college_career_assist_turnover_ratio · college_career_three_attempt_rate · college_career_free_throw_rate · college_career_ft_pct_shrunk · college_career_playmaking_margin_per_40 · college_career_production_index · college_career_stocks_per_40_advanced · college_career_three_pct_shrunk · college_career_usage_proxy_per_40</div>
+      </div>
+      <div class="feature-block">
+        <h4>Development · 16</h4>
+        <div class="feature-list">college_development_season_gap · college_development_minutes_per_game_delta · college_development_start_rate_delta · college_development_three_pct_delta · college_development_ft_pct_delta · college_development_efg_pct_delta · college_development_ts_pct_delta · college_development_points_per_40_delta · college_development_rebounds_per_40_delta · college_development_assists_per_40_delta · college_development_steals_per_40_delta · college_development_blocks_per_40_delta · college_development_turnovers_per_40_delta · college_development_assist_turnover_ratio_delta · college_development_three_attempt_rate_delta · college_development_free_throw_rate_delta</div>
+      </div>
+      <div class="feature-block">
+        <h4>Age/upside and composite interactions · 6</h4>
+        <div class="feature-list">college_age_on_july_1 · prospect_age_centered_21 · prospect_age_squared · prospect_youth_score · college_age_adjusted_scoring · college_age_adjusted_stocks</div>
+      </div>
+      <div class="feature-block">
+        <h4>Categorical · 2</h4>
+        <div class="feature-list">position · college_position</div>
+      </div>
+    </section>
+
+    <section class="section page-break">
+      <div class="kicker">Appendix B</div>
+      <h2>Advanced minutes-regression feature inventory</h2>
+      <div class="feature-block">
+        <h4>Base draft, age, and college features · 17</h4>
+        <div class="feature-list">overall_pick · age_on_draft_year_july1 · age_on_draft_year_july1_missing · college_last_assists_per_40 · college_last_assist_turnover_ratio · college_last_points_per_40 · college_last_rebounds_per_40 · college_last_three_pct · college_last_ft_pct · college_last_stocks_per_40 · college_last_vs_career_points_per_40 · college_last_vs_career_steals_per_40 · college_last_vs_career_blocks_per_40 · college_last_vs_career_turnovers_per_40 · college_last_vs_career_three_pct · college_last_vs_career_ft_pct · college_last_vs_career_three_attempt_rate</div>
+      </div>
+      <div class="feature-block">
+        <h4>Nonlinear draft capital · 8</h4>
+        <div class="feature-list">draft_pick_log · draft_pick_sqrt · draft_pick_inverse · draft_pick_squared · draft_pick_top_5 · draft_pick_top_10 · draft_pick_lottery · draft_pick_first_round</div>
+      </div>
+      <div class="feature-block">
+        <h4>Age, upside, and draft interaction · 6</h4>
+        <div class="feature-list">prospect_age_centered_21 · prospect_age_squared · prospect_youth_score · college_age_adjusted_scoring · college_age_adjusted_stocks · draft_pick_x_age</div>
+      </div>
+      <div class="feature-block">
+        <h4>Reliability and production composites · 8</h4>
+        <div class="feature-list">college_career_ft_pct_shrunk · college_career_playmaking_margin_per_40 · college_career_production_index · college_career_stocks_per_40_advanced · college_career_three_pct_shrunk · college_last_playmaking_margin_per_40 · college_last_production_index · college_last_stocks_per_40_advanced</div>
+      </div>
+      <div class="feature-block">
+        <h4>Last-season to career ratios · 9</h4>
+        <div class="feature-list">college_last_to_career_assists_per_40_ratio · college_last_to_career_blocks_per_40_ratio · college_last_to_career_ft_pct_ratio · college_last_to_career_points_per_40_ratio · college_last_to_career_rebounds_per_40_ratio · college_last_to_career_steals_per_40_ratio · college_last_to_career_three_pct_ratio · college_last_to_career_ts_pct_ratio · college_last_to_career_turnovers_per_40_ratio</div>
+      </div>
+    </section>
+
+    <section class="section page-break">
+      <div class="kicker">Appendix C</div>
+      <h2>Reproduction commands and source map</h2>
+      <h3>Frozen training runs</h3>
+      <pre>python src/train_classifier.py --config configs/xgboost_draft_classifier_advanced_best.json
+python src/train_model.py --config configs/xgboost_minutes_advanced_best.json</pre>
+
+      <h3>Classifier tuning</h3>
+      <pre># quick check: five sampled candidates plus two configured fixed candidates
+python src/tune_classifier.py --config configs/xgboost_draft_classifier_advanced_best.json --n-iter 5
+
+# full recorded search: 180 sampled candidates plus two fixed candidates
+python src/tune_classifier.py --config configs/xgboost_draft_classifier_advanced_best.json</pre>
+
+      <h3>Generated classifier artifacts</h3>
+      <ul>
+        <li><code>models/xgboost_draft_classifier_advanced.joblib</code> — estimator, sigmoid calibrator, decision rule, and schema.</li>
+        <li><code>models/xgboost_draft_classifier_advanced_metrics.json</code> — raw/calibrated metrics and purge metadata.</li>
+        <li><code>models/xgboost_draft_classifier_advanced_test_predictions.csv</code> — row-level holdout probabilities, decisions, and annual ranks.</li>
+        <li><code>models/xgboost_draft_classifier_advanced_feature_importance.csv</code> — fitted XGBoost split importance.</li>
+      </ul>
+
+      <h3>Implementation source map</h3>
+      <table class="source-map tight">
+        <thead><tr><th>Area</th><th>Primary source</th></tr></thead>
+        <tbody>
+          <tr><td>Classifier command-line orchestration</td><td><code>src/train_classifier.py</code></td></tr>
+          <tr><td>Classifier preprocessing, calibration, decisions, and artifact helpers</td><td><code>src/classifier_workflow.py</code></td></tr>
+          <tr><td>Expanding-fold classification tuning and normalized AP</td><td><code>src/tune_classifier.py</code>, <code>src/tuning.py</code></td></tr>
+          <tr><td>Frozen classifier schema and parameters</td><td><code>configs/xgboost_draft_classifier_advanced_best.json</code></td></tr>
+          <tr><td>Regression preprocessing and training</td><td><code>src/train_model.py</code>, <code>src/tune_model.py</code></td></tr>
+          <tr><td>Frozen minutes schema and parameters</td><td><code>configs/xgboost_minutes_advanced_best.json</code></td></tr>
+          <tr><td>Shared two-stage table</td><td><code>src/prepare_data.py</code></td></tr>
+          <tr><td>Advanced feature formulas and materialization provenance</td><td><code>.archive/src/advanced_feature_engineering.py</code>, <code>.archive/src/feature_engineering.py</code>, <code>.archive/src/build_advanced_model_datasets.py</code></td></tr>
+          <tr><td>Classifier cohort and NCAA enrichment provenance</td><td><code>nba_draft_data_collection/build_draft_classification_dataset.py</code>, <code>nba_draft_data_collection/build_enriched_draft_classification_dataset.py</code></td></tr>
+          <tr><td>Historical verification reports</td><td><code>.archive/models/xgboost_draft_classifier_advanced_tuning_results.json</code>, <code>.archive/models/xgboost_minutes_advanced_tuning_results.json</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Modeling limitations</h3>
+      <ul>
+        <li>The classifier applies to Combine participants, not every NCAA player.</li>
+        <li>The minutes model applies only to drafted players and includes draft capital; it is not a pre-draft talent-only model.</li>
+        <li>Missing NCAA linkage is retained as missing. If linkage failure is systematically related to prospect type, native missing handling does not remove that selection mechanism.</li>
+        <li>Multiple model families have now been compared on the same 2020–2022 period. Treat holdout values as descriptive and use a future cohort for the next independent confirmation.</li>
+        <li>Predictions are predictive associations, not causal estimates of what a team or player should do.</li>
+      </ul>
+
+      <div class="footer-note">Prepared from the checked-in code, configurations, materialized parquet schemas, and archived experiment reports in <code>D:\Mestrado\nba-draft</code>. Values were revalidated during the compatibility restoration on 19 August 2026.</div>
+    </section>
+  </main>
+</body>
+</html>
