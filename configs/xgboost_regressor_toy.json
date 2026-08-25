@@ -1,0 +1,217 @@
+{
+  "data_path": "nba_draft_data_collection/data/processed/drafted_players_advanced.parquet",
+  "target": "nba_min_3y",
+  "feature_engineering": {
+    "missing_indicators": [
+      "age_on_draft_year_july1"
+    ],
+    "college_stocks_per_40": true,
+    "college_last_vs_career": [
+      "points_per_40",
+      "steals_per_40",
+      "blocks_per_40",
+      "turnovers_per_40",
+      "three_pct",
+      "ft_pct",
+      "three_attempt_rate"
+    ]
+  },
+  "numerical_features": [
+    "overall_pick",
+    "age_on_draft_year_july1",
+    "age_on_draft_year_july1_missing",
+    "college_last_assists_per_40",
+    "college_last_assist_turnover_ratio",
+    "college_last_points_per_40",
+    "college_last_rebounds_per_40",
+    "college_last_three_pct",
+    "college_last_ft_pct",
+    "college_last_stocks_per_40",
+    "college_last_vs_career_points_per_40",
+    "college_last_vs_career_steals_per_40",
+    "college_last_vs_career_blocks_per_40",
+    "college_last_vs_career_turnovers_per_40",
+    "college_last_vs_career_three_pct",
+    "college_last_vs_career_ft_pct",
+    "college_last_vs_career_three_attempt_rate",
+    "draft_pick_log",
+    "draft_pick_sqrt",
+    "draft_pick_inverse",
+    "draft_pick_squared",
+    "draft_pick_top_5",
+    "draft_pick_top_10",
+    "draft_pick_lottery",
+    "draft_pick_first_round",
+    "prospect_age_centered_21",
+    "prospect_age_squared",
+    "prospect_youth_score",
+    "college_age_adjusted_scoring",
+    "college_age_adjusted_stocks",
+    "draft_pick_x_age",
+    "college_career_ft_pct_shrunk",
+    "college_career_playmaking_margin_per_40",
+    "college_career_production_index",
+    "college_career_stocks_per_40_advanced",
+    "college_career_three_pct_shrunk",
+    "college_last_playmaking_margin_per_40",
+    "college_last_production_index",
+    "college_last_stocks_per_40_advanced",
+    "college_last_to_career_assists_per_40_ratio",
+    "college_last_to_career_blocks_per_40_ratio",
+    "college_last_to_career_ft_pct_ratio",
+    "college_last_to_career_points_per_40_ratio",
+    "college_last_to_career_rebounds_per_40_ratio",
+    "college_last_to_career_steals_per_40_ratio",
+    "college_last_to_career_three_pct_ratio",
+    "college_last_to_career_ts_pct_ratio",
+    "college_last_to_career_turnovers_per_40_ratio"
+  ],
+  "categorical_features": [],
+  "log_transform_target": false,
+  "refit_on_train_validation": true,
+  "split": {
+    "column": "draft_year",
+    "train_end": 2017,
+    "validation_start": 2018,
+    "validation_end": 2019,
+    "test_start": 2020,
+    "test_end": 2022
+  },
+  "model": {
+    "name": "xgboost",
+    "hyperparameters": {
+      "objective": "reg:squarederror",
+      "tree_method": "hist",
+      "random_state": 42,
+      "n_jobs": -1,
+        "n_estimators": 250,
+        "learning_rate": 0.03,
+        "max_depth": 5,
+        "min_child_weight": 10,
+        "subsample": 1.0,
+        "colsample_bytree": 0.8,
+        "reg_alpha": 5.0,
+        "reg_lambda": 10.0,
+        "gamma": 0.0
+    }
+  },
+  "tuning": {
+    "n_iter": 120,
+    "random_state": 42,
+    "validation_folds": [
+      {
+        "name": "2014_2015",
+        "train_end": 2013,
+        "validation_start": 2014,
+        "validation_end": 2015
+      },
+      {
+        "name": "2016_2017",
+        "train_end": 2015,
+        "validation_start": 2016,
+        "validation_end": 2017
+      },
+      {
+        "name": "2018_2019",
+        "train_end": 2017,
+        "validation_start": 2018,
+        "validation_end": 2019
+      }
+    ],
+    "fixed_candidates": [
+      {
+        "n_estimators": 250,
+        "learning_rate": 0.03,
+        "max_depth": 1,
+        "min_child_weight": 5,
+        "subsample": 1.0,
+        "colsample_bytree": 0.8,
+        "reg_alpha": 5.0,
+        "reg_lambda": 10.0,
+        "gamma": 0.0
+      }
+    ],
+    "search_space": {
+      "n_estimators": [
+        1,
+        10,
+        30,
+        50,
+        100,
+        150,
+        250,
+        350,
+        500
+      ],
+      "learning_rate": [
+        0.005,
+        0.01,
+        0.02,
+        0.03,
+        0.05,
+        0.1,
+        0.3
+      ],
+      "max_depth": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        10
+      ],
+      "min_child_weight": [
+        3,
+        5,
+        10,
+        20,
+        30
+      ],
+      "subsample": [
+        0.3,
+        0.5,
+        0.65,
+        0.8,
+        1.0
+      ],
+      "colsample_bytree": [
+        0.6,
+        0.8,
+        1.0
+      ],
+      "reg_alpha": [
+        0.0,
+        5.0,
+        10.0,
+        50.0,
+        100.0,
+        250.0,
+        500.0
+      ],
+      "reg_lambda": [
+        1.0,
+        5.0,
+        10.0,
+        25.0,
+        50.0
+      ],
+      "gamma": [
+        0.0,
+        10000.0,
+        30000.0,
+        50000.0,
+        100000.0,
+        200000.0
+      ]
+    },
+    "output_model_path": "models/xgboost_minutes_advanced_search.joblib",
+    "results_path": "models/xgboost_minutes_advanced_search_results.json",
+    "best_config_path": "configs/xgboost_minutes_advanced_search_best.json"
+  },
+  "output_model_path": "models/xgboost_minutes_advanced.joblib",
+  "feature_selection_provenance": {
+    "method": "frozen-parameter expanding-window comparison through 2019",
+    "selected_feature_set": "capital_age_college_development",
+    "test_labels_used": false
+  }
+}

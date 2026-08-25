@@ -5,8 +5,6 @@ and prediction rules here.  Everything is still plain functions and dictionaries
 so the same steps are easy to use from a notebook.
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Any

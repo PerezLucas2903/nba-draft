@@ -5,8 +5,10 @@ This project answers two related, but deliberately separate, questions:
 1. Which post-Combine prospects are most likely to be drafted?
 2. Once a player is drafted, what predicts his NBA minutes over the next three seasons?
 
-The models use NCAA, NBA Draft Combine, and draft data from 2009-2022. Both
-use chronological evaluation, with 2020-2022 reserved as the final holdout.
+The entry classifier uses NCAA and NBA Draft Combine information. The minutes
+model uses NCAA features and draft capital, with NBA regular-season minutes as
+its outcome. Both cover the 2009-2022 draft classes and use chronological
+evaluation, with 2020-2022 reserved as the final holdout.
 
 ## The two frozen results
 
@@ -27,15 +29,54 @@ The winning JSON files are kept as frozen reference experiments:
 
 ## Setup
 
-From the repository root:
+Python 3.10 or newer is required. From the repository root:
 
 ```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-python -m unittest discover -s tests -v
 ```
 
-The processed Parquet files needed by the two frozen configs are already under
-`nba_draft_data_collection/data/processed/`.
+On Linux or macOS:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+## Get the data
+
+Raw and processed data are generated locally and intentionally ignored by Git.
+Follow the [data collection guide](nba_draft_data_collection/README.md) to
+install the separate collection dependencies, download the public NCAA and NBA
+sources, validate the download, and build the processed tables supported by the
+tracked scripts.
+
+The two frozen configs require these exact local snapshots:
+
+- `nba_draft_data_collection/data/processed/draft_classification_advanced.parquet`
+- `nba_draft_data_collection/data/processed/drafted_players_advanced.parquet`
+
+The repository currently does not include the final materialization step that
+created those two advanced snapshots. The collection guide documents the raw
+download and the reproducible base/enriched builders, but rerunning the frozen
+results also requires placing the advanced snapshots at the paths above.
+
+The collection guide uses its own virtual environment. After following it,
+return to the repository root and reactivate the modeling environment:
+
+```powershell
+cd ..
+.venv\Scripts\Activate.ps1
+```
+
+On Linux or macOS, use `source .venv/bin/activate` after `cd ..`. Once the two
+advanced files are available, run the complete test suite:
+
+```powershell
+python -m unittest discover -s tests -v
+```
 
 ## Train the winners
 
@@ -136,11 +177,11 @@ also available as [HTML](docs/model_preprocessing_report.html).
 ```text
 configs/       JSON contracts for training and tuning
 src/           Short CLI scripts and reusable workflow functions
+nba_draft_data_collection/  Downloaders, dataset builders, and local data workspace
 notebooks/     Analysis plus the two teaching notebooks
 docs/          Searchable reports and their editable HTML sources
 tests/         Compatibility, leakage, tuning, and result checks
 models/        Reproducible local outputs (ignored by git)
-results/       Exported analysis tables
 ```
 
 This is a predictive study, not a causal one. The entry result applies to the
